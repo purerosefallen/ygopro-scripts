@@ -36,17 +36,14 @@ function c81558967.target(e,tp,eg,ep,ev,re,r,rp,chk)
 	Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,0,LOCATION_DECK)
 end
 function c81558967.thfilter(c)
-	return (c:GetType()==TYPE_SPELL or c:GetType()==TYPE_TRAP) and c:IsAbleToHand()
-end
-function c81558967.thfilter0(c)
-	return (c:GetType()==TYPE_SPELL or c:GetType()==TYPE_TRAP)
+	return c:GetType()==TYPE_SPELL or c:GetType()==TYPE_TRAP
 end
 function c81558967.operation(e,tp,eg,ep,ev,re,r,rp)
 	local ct=Duel.GetMatchingGroupCount(c81558967.ctfilter,tp,LOCATION_MZONE,0,e:GetHandler())
 	if ct==0 then return end
 	local g=Duel.GetDecktopGroup(tp,ct)
 	Duel.ConfirmDecktop(tp,ct)
-	tg=g:Filter(c81558967.thfilter0,nil)
+	tg=g:Filter(c81558967.thfilter,nil)
 	if tg:GetCount()>0 then
 		Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
 		local tc=tg:Select(tp,1,1,nil):GetFirst()
