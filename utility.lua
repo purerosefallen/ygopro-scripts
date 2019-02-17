@@ -2009,10 +2009,12 @@ function Auxiliary.LookupSubGroupCache(cache,sg)
 	local res
 	local found=false
 	if t then
-		for g,data in pairs(t) do
+		for _,data in ipairs(t) do
+			local g=data[1]
+			local data_res=data[2]
 			if sg:Equal(g) then
 				found=true
-				res=data
+				res=data_res
 				break
 			end
 		end
@@ -2025,7 +2027,7 @@ function Auxiliary.StoreSubGroupCache(cache,sg,res)
 	if not cache[ct] then
 		cache[ct]={}
 	end
-	cache[ct][g]=res
+	table.insert(cache[ct],{g,res})
 end
 function Auxiliary.CheckGroupRecursive(c,sg,g,cache,f,min,max,ext_params)
 	sg:AddCard(c)
