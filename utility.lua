@@ -2011,15 +2011,28 @@ end
 Auxiliary.GoalSubGroup=nil
 function Auxiliary.CheckGroupRecursive(c,sg,g,f,min,max,ext_params)
 	sg:AddCard(c)
-	Auxiliary.GoalSubGroup:Clear()
-	Auxiliary.GoalSubGroup:Merge(sg)
-	local res=(#sg>=min and #sg<=max and f(sg,table.unpack(ext_params)))
-		or (#sg<max and g:IsExists(Auxiliary.CheckGroupRecursive,1,sg,sg,g,f,min,max,ext_params))
+	local res=false
+	if #sg>=min and #sg<=max and f(sg,table.unpack(ext_params)) then
+		if Auxiliary.GoalSubGroup then
+			Auxiliary.GoalSubGroup:Clear()
+			Auxiliary.GoalSubGroup:Merge(sg)
+		end
+		res=true
+	elseif #sg<max then
+		local eg=g:Clone()
+		for tc in aux.Next(g-sg) do
+			if Auxiliary.CheckGroupRecursive(tc,sg,eg,f,min,max,ext_params) then
+				res=true
+				break
+			else
+				eg:RemoveCard(tc)
+			end
+		end
+	end
 	sg:RemoveCard(c)
 	return res
 end
 function Group.CheckSubGroup(g,f,min,max,...)
-	Auxiliary.GoalSubGroup=Group.CreateGroup()
 	local min=min or 1
 	local max=max or #g
 	if min>max then return false end
@@ -2028,7 +2041,7 @@ function Group.CheckSubGroup(g,f,min,max,...)
 	if #sg>max or #(g+sg)<min or #sg==max and not f(sg,...) then return false end
 	if #sg>=min and #sg<=max and f(sg,...) then return true end
 	local eg=g:Clone()
-	for c in aux.Next(g) do
+	for c in aux.Next(g-sg) do
 		if Auxiliary.CheckGroupRecursive(c,sg,eg,f,min,max,ext_params) then return true end
 		eg:RemoveCard(c)
 	end
@@ -2041,7 +2054,10 @@ function Group.SelectSubGroup(g,tp,f,cancelable,min,max,...)
 	local ext_params={...}
 	local sg=Group.CreateGroup()
 	local fg=Duel.GrabSelectedCard()
-	if #fg>max or min>max or #(g+fg)<min then return nil end
+	if #fg>max or min>max or #(g+fg)<min then
+		Auxiliary.GoalSubGroup=nil
+		return nil
+	end
 	for tc in aux.Next(fg) do
 		fg:SelectUnselect(sg,tp,false,false,min,max)
 	end
@@ -2050,8 +2066,8 @@ function Group.SelectSubGroup(g,tp,f,cancelable,min,max,...)
 	while #sg<max do
 		local cg=Group.CreateGroup()
 		local eg=g:Clone()
-		for c in aux.Next(g) do
-			if not cg:IsContains(c) and not sg:IsContains(c) then
+		for c in aux.Next(g-sg) do
+			if not cg:IsContains(c) then
 				if Auxiliary.CheckGroupRecursive(c,sg,eg,f,min,max,ext_params) then
 					cg:Merge(Auxiliary.GoalSubGroup)
 				else
@@ -2073,9 +2089,11 @@ function Group.SelectSubGroup(g,tp,f,cancelable,min,max,...)
 				sg:RemoveCard(tc)
 			end
 		elseif cancelable then
+			Auxiliary.GoalSubGroup=nil
 			return nil
 		end
 	end
+	Auxiliary.GoalSubGroup=nil
 	if finish then
 		return sg
 	else
