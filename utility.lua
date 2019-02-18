@@ -2028,7 +2028,6 @@ function Auxiliary.CheckGroupRecursive(c,sg,g,f,min,max,ext_params)
 				eg:RemoveCard(tc)
 			end
 		end
-		eg:DeleteGroup()
 	end
 	sg:RemoveCard(c)
 	return res
@@ -2046,7 +2045,6 @@ function Group.CheckSubGroup(g,f,min,max,...)
 		if Auxiliary.CheckGroupRecursive(c,sg,eg,f,min,max,ext_params) then return true end
 		eg:RemoveCard(c)
 	end
-	eg:DeleteGroup()
 	return false
 end
 function Group.SelectSubGroup(g,tp,f,cancelable,min,max,...)
@@ -2077,7 +2075,6 @@ function Group.SelectSubGroup(g,tp,f,cancelable,min,max,...)
 				end
 			end
 		end
-		eg:DeleteGroup()
 		cg:Sub(sg)
 		finish=(#sg>=min and #sg<=max and f(sg,...))
 		if #cg==0 then break end
