@@ -2056,9 +2056,7 @@ function Group.SelectSubGroup(g,tp,f,cancelable,min,max,...)
 	local ext_params={...}
 	local sg=Group.CreateGroup()
 	local fg=Duel.GrabSelectedCard()
-	if #fg>max or min>max or #(g+fg)<min then
-		return nil
-	end
+	if #fg>max or min>max or #(g+fg)<min then return nil end
 	for tc in aux.Next(fg) do
 		fg:SelectUnselect(sg,tp,false,false,min,max)
 	end
