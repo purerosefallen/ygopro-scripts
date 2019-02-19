@@ -2009,39 +2009,32 @@ function Auxiliary.GetMultiLinkedZone(tp)
 	return multi_linked_zone
 end
 Auxiliary.SubGroupCaptured=nil
+function Auxiliary.CheckGroupRecursiveNext(nextf,sg,g,f,min,max,ext_params)
+	local eg=g:Clone()
+	for c in aux.Next(g-sg) do
+		if nextf(c,sg,eg,f,min,max,ext_params) then
+			return true
+		else
+			eg:RemoveCard(c)
+		end
+	end
+	return false
+end
 function Auxiliary.CheckGroupRecursive(c,sg,g,f,min,max,ext_params)
 	sg:AddCard(c)
 	local res=(#sg>=min and #sg<=max and f(sg,table.unpack(ext_params)))
-	if not res and #sg<max then
-		local eg=g:Clone()
-		for tc in aux.Next(g-sg) do
-			if Auxiliary.CheckGroupRecursive(tc,sg,eg,f,min,max,ext_params) then
-				res=true
-				break
-			else
-				eg:RemoveCard(tc)
-			end
-		end
-	end
+		or (#sg<max and Auxiliary.CheckGroupRecursiveNext(Auxiliary.CheckGroupRecursive,sg,g,f,min,max,ext_params))
 	sg:RemoveCard(c)
 	return res
 end
 function Auxiliary.CheckGroupRecursiveCapture(c,sg,g,f,min,max,ext_params)
 	sg:AddCard(c)
-	local res=(#sg>=min and #sg<=max and f(sg,table.unpack(ext_params)))
+	local res=#sg>=min and #sg<=max and f(sg,table.unpack(ext_params))
 	if res then
 		Auxiliary.SubGroupCaptured:Clear()
 		Auxiliary.SubGroupCaptured:Merge(sg)
-	elseif #sg<max then
-		local eg=g:Clone()
-		for tc in aux.Next(g-sg) do
-			if Auxiliary.CheckGroupRecursive(tc,sg,eg,f,min,max,ext_params) then
-				res=true
-				break
-			else
-				eg:RemoveCard(tc)
-			end
-		end
+	else
+		res=#sg<max and Auxiliary.CheckGroupRecursiveNext(Auxiliary.CheckGroupRecursiveCapture,sg,g,f,min,max,ext_params)
 	end
 	sg:RemoveCard(c)
 	return res
@@ -2054,12 +2047,7 @@ function Group.CheckSubGroup(g,f,min,max,...)
 	local sg=Duel.GrabSelectedCard()
 	if #sg>max or #(g+sg)<min or #sg==max and not f(sg,...) then return false end
 	if #sg>=min and #sg<=max and f(sg,...) then return true end
-	local eg=g:Clone()
-	for c in aux.Next(g-sg) do
-		if Auxiliary.CheckGroupRecursive(c,sg,eg,f,min,max,ext_params) then return true end
-		eg:RemoveCard(c)
-	end
-	return false
+	return Auxiliary.CheckGroupRecursiveNext(Auxiliary.CheckGroupRecursive,sg,g,f,min,max,ext_params)
 end
 function Group.SelectSubGroup(g,tp,f,cancelable,min,max,...)
 	Auxiliary.SubGroupCaptured=Group.CreateGroup()
@@ -2069,7 +2057,6 @@ function Group.SelectSubGroup(g,tp,f,cancelable,min,max,...)
 	local sg=Group.CreateGroup()
 	local fg=Duel.GrabSelectedCard()
 	if #fg>max or min>max or #(g+fg)<min then
-		Auxiliary.GoalSubGroup=nil
 		return nil
 	end
 	for tc in aux.Next(fg) do
@@ -2103,11 +2090,9 @@ function Group.SelectSubGroup(g,tp,f,cancelable,min,max,...)
 				sg:RemoveCard(tc)
 			end
 		elseif cancelable then
-			Auxiliary.GoalSubGroup=nil
 			return nil
 		end
 	end
-	Auxiliary.GoalSubGroup=nil
 	if finish then
 		return sg
 	else
